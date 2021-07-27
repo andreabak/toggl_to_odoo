@@ -73,3 +73,8 @@ docs/_build/
 # Backup files
 *~
 *.swp
+
+# DumbDB files
+*.bak
+*.dat
+*.dir
