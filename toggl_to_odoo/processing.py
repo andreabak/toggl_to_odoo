@@ -40,13 +40,14 @@ def snap_entries(time_entries: List[TimeEntry], snap_seconds: float):
     time_entries_with_midtime.sort(key=lambda te: te[0])
     start_windows: DefaultDict[int, List[Tuple[float, TimeEntry]]] = defaultdict(list)
     stop_windows: DefaultDict[int, List[Tuple[float, TimeEntry]]] = defaultdict(list)
+    midtime: float
+    entry: TimeEntry
     for midtime, entry in time_entries_with_midtime:
         start_windows[calc_window_id(entry.start, snap_seconds)].append(
             (midtime, entry)
         )
         stop_windows[calc_window_id(entry.stop, snap_seconds)].append((midtime, entry))
     snapped_seconds: float = 0.0
-    entry: TimeEntry
     for midtime, entry in time_entries_with_midtime:
         # Only considering prev stop times to next start times once
         # start_window_id: int = calc_window_id(entry.start, snap_seconds)
@@ -65,10 +66,10 @@ def snap_entries(time_entries: List[TimeEntry], snap_seconds: float):
         ]
         snap_candidates: List[Tuple[float, TimeEntry]] = sorted(
             (
-                (delta, e)
-                for m, e in nearby_window_entries
-                if abs(delta := (e.start - entry.stop).total_seconds()) <= snap_seconds
-                and m >= midtime
+                (e_delta, e)
+                for e_midtime, e in nearby_window_entries
+                if abs(e_delta := (e.start - entry.stop).total_seconds()) <= snap_seconds
+                and e_midtime >= midtime
             ),
             key=lambda t: abs(t[0]),
         )

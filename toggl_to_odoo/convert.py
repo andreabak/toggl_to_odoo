@@ -10,12 +10,13 @@ from typing import (
     Callable,
     Optional,
     Tuple,
-    Generator,
     MutableSequence,
     List,
     Sequence,
     Set,
     ClassVar,
+    Iterator,
+    Generic,
 )
 
 from toggl.api import TimeEntry
@@ -88,7 +89,7 @@ _CT = TypeVar("_CT", bound=EntryConverterBase)
 ConverterClass = Type[_CT]
 
 
-class ChainedConverter:
+class ChainedConverter(Generic[_CT]):
     _instances: ClassVar[MutableMapping[str, "ChainedConverter"]] = {}
 
     @classmethod
@@ -173,19 +174,17 @@ class ChainedConverter:
         entries: ValueOrCollection[TimeEntry],
         must_match: bool = True,
         **converter_kwargs,
-    ) -> Generator[Optional[TimesheetLine], None, Optional[TimesheetLine]]:
-        is_single: bool = isinstance(entries, TimeEntry)
-        converters = self._build_converters(**converter_kwargs)
+    ) -> Iterator[TimesheetLine]:
+        if isinstance(entries, TimeEntry):
+            entries = [entries]
+        converters: List[_CT] = self._build_converters(**converter_kwargs)
         entry: TimeEntry
-        for entry in [entries] if is_single else entries:
+        for entry in entries:
             line: Optional[TimesheetLine] = self._convert_one(
                 entry, converters=converters, must_match=must_match
             )
-            if is_single:
-                return line  # TODO: I forgot, why am I returning here?
             if line is not None:
                 yield line
-        return None
 
     def convert(
         self,

@@ -27,9 +27,12 @@ class OdooXmlRpc:
         return self.uid is not None
 
     def authenticate(self) -> int:
-        self.uid = self._xmlrpc_common.authenticate(
+        result: Any = self._xmlrpc_common.authenticate(
             self.db_name, self.username, self.password, {}
         )
+        if not isinstance(result, int):
+            raise ValueError("Failed authenticating to odoo xmlrpc!")
+        self.uid = result
         return self.uid
 
     def _object_command(self, model: str, command: str, *args: Any) -> Any:
@@ -80,12 +83,20 @@ class OdooXmlRpc:
         assert isinstance(results, list)
         return results
 
+    @staticmethod
+    def _assert_name_result(r: Any) -> Tuple[int, str]:
+        assert isinstance(r, (tuple, list))
+        assert len(r) == 2
+        assert isinstance(r[0], int)
+        assert isinstance(r[1], str)
+        return r[0], r[1]
+
     def name_get(
         self, model: str, ids: ValueOrCollection[int]
     ) -> List[Tuple[int, str]]:
         results = self._object_command(model, "name_get", (ids,))
         assert isinstance(results, list)
-        return [tuple(r) for r in results]
+        return [self._assert_name_result(r) for r in results]
 
     def name_search(
         self,
@@ -101,19 +112,19 @@ class OdooXmlRpc:
             params["operator"] = operator
         results = self._object_command(model, "name_search", (name,), params)
         assert isinstance(results, list)
-        return [tuple(r) for r in results]
+        return [self._assert_name_result(r) for r in results]
 
     def create(self, model: str, values: MutableMapping[str, Any]) -> int:
-        results = self._object_command(model, "create", (values,))
-        assert isinstance(results, (int, list))
-        return results
+        result = self._object_command(model, "create", (values,))
+        assert isinstance(result, int)
+        return result
 
     def write(
         self, model: str, ids: ValueOrCollection[int], values: MutableMapping[str, Any]
     ) -> int:
-        results = self._object_command(model, "write", (ids, values))
-        assert isinstance(results, (int, list))
-        return results
+        result = self._object_command(model, "write", (ids, values))
+        assert isinstance(result, int)
+        return result
 
     def unlink(self, model: str, ids: ValueOrCollection[int]) -> bool:
         return self._object_command(model, "unlink", (ids,))

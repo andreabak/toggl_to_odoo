@@ -23,12 +23,13 @@ from toggl.api.models import TimeEntrySet
 from .utils import OptionalValueOrCollection
 
 
+# pylint: disable=redefined-builtin,invalid-name
+
 # ---------------------- Patching TogglSet for caching ---------------------- #
 #
 _togglset_get_original = TogglSet.get
 
 
-# pylint: disable=redefined-builtin
 def _togglset_get(self, id=None, config=None, **conditions):
     cacheable: bool = self.cache_enabled and id is not None
     cache_key: Any = (self.__class__, self.entity_cls, id)
@@ -150,6 +151,7 @@ class BetterTimeEntrySet(TimeEntrySet):
         except (ValueError, TypeError) as exc:
             raise ValueError(f'Bad value for parameter "{name}": {value}') from exc
 
+    # pylint: disable=arguments-differ,too-many-arguments,too-many-locals,unused-argument
     def _build_reports_url(
         self,
         workspace: Optional[WorkspaceType] = None,
@@ -202,7 +204,7 @@ class BetterTimeEntrySet(TimeEntrySet):
         """
         fn_locals: MutableMapping[str, Any] = locals()
 
-        def param(name: str) -> Tuple[str, Any]:
+        def param(name: str) -> Tuple[Any, str]:
             nonlocal fn_locals
             assert name in fn_locals
             return fn_locals[name], name
@@ -307,7 +309,7 @@ class BetterTimeEntrySet(TimeEntrySet):
             "without_description": convert_bool(*param("include_without_description")),
             "order_field": convert_enum(*param("order_by")),
             "order_desc": {"desc": "on", "asc": "off"}.get(
-                convert_enum(*param("order_direction"))
+                convert_enum(*param("order_direction"))  # type: ignore
             ),
             "rounding": convert_bool(
                 *param("rounding"), true_value="yes", false_value="no"

@@ -65,7 +65,6 @@ def parse_odoo_credentials(
 
     if username and parsed.username and parsed.username != username:
         raise AttributeError("Passed two different usernames in url and arguments")
-    username: str
     if not username and not parsed.username:
         username = input("Odoo DB username: ")
     else:
@@ -73,11 +72,12 @@ def parse_odoo_credentials(
 
     if password and parsed.password and parsed.password != password:
         raise AttributeError("Passed two different passwords in url and arguments")
-    password: str
     if not password and not parsed.password:
         password = getpass.getpass("Odoo DB password: ")
     else:
         password = password or parsed.password
+
+    assert username and password and parsed.hostname  # TODO: convert to exception?
 
     # Rebuild url without username and password
     cleaned_url: str = urlunparse(

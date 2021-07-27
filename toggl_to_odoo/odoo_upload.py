@@ -108,6 +108,7 @@ def odoo_upload_line(
         new_id: int = odoo_rpc.create(model, values)
         print(f"Created new record in {model} with id={new_id}")
         refs = refs or []
+        assert history is not None
         history.setdefault(model, {})
         history[model].setdefault(new_id, set())
         history[model][new_id] |= set(refs)
@@ -131,7 +132,8 @@ def odoo_upload_line(
     except MissingRecord as exc:
         if not isinstance(line["task"], str):
             raise ConstraintError("No task found and line's is not str") from exc
-        if not allow_task_creation:  # pylint: disable=raise-missing-from
+        # pylint: disable=raise-missing-from
+        if not allow_task_creation:
             raise ConstraintError("Task creation is not enabled")
         new_task = True
 
@@ -158,7 +160,7 @@ def odoo_upload_line(
             task = find_one(odoo_rpc, "project.task", new_task_id)
 
     # TODO: Maybe try searching timesheet entry with same values (except time unit) and either raise an error or warn
-
+    assert task is not None
     new_ts_line_id: int = create_record(
         "account.analytic.line",
         dict(

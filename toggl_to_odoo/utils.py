@@ -23,6 +23,7 @@ OptionalStrOrCollection = OptionalValueOrCollection[str]
 OptList = Optional[List[_T]]
 
 
+# pylint: disable=invalid-name
 def fmt_time(seconds: float, precision: int = 0, with_letters: bool = True) -> str:
     """
     Format a duration in seconds into a timer-like string
