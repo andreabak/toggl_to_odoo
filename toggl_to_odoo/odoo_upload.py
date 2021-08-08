@@ -13,6 +13,7 @@ from typing import (
     Collection,
     Hashable,
     Set,
+    Sequence,
 )
 
 from .convert import TimesheetLine
@@ -20,12 +21,6 @@ from .odoo_xmlrpc import OdooXmlRpc
 
 
 logger: logging.Logger = logging.getLogger(__name__)
-
-
-# base_url = "https://www.odoo.com"
-# db = "openerp"
-# username = "trigram"
-# apikey = ...
 
 
 class UploadException(Exception):
@@ -70,21 +65,29 @@ def name_search_one(odoo_rpc: OdooXmlRpc, model: str, name: str) -> int:
     return ensure_one(rpc_result, model, "name", name)[0]
 
 
-def read_one(odoo_rpc: OdooXmlRpc, model: str, id_: int) -> MutableMapping[str, Any]:
-    rpc_result: List[MutableMapping[str, Any]] = odoo_rpc.read(model, id_)
+def read_one(
+    odoo_rpc: OdooXmlRpc,
+    model: str,
+    id_: int,
+    fields: Optional[Sequence[str]] = None,
+) -> MutableMapping[str, Any]:
+    rpc_result: List[MutableMapping[str, Any]] = odoo_rpc.read(model, id_, fields)
     return ensure_one(rpc_result, model, "id", id_)
 
 
 @lru_cache()
 def find_one(
-    odoo_rpc: OdooXmlRpc, model: str, name_or_id: Union[str, int]
+    odoo_rpc: OdooXmlRpc,
+    model: str,
+    name_or_id: Union[str, int],
+    fields: Optional[Sequence[str]] = None,
 ) -> MutableMapping[str, Any]:
     record_id: int
     if isinstance(name_or_id, str):
         record_id = name_search_one(odoo_rpc, model, name_or_id)
     else:
         record_id = int(name_or_id)
-    return read_one(odoo_rpc, model, record_id)
+    return read_one(odoo_rpc, model, record_id, fields)
 
 
 def odoo_upload_line(
@@ -117,8 +120,14 @@ def odoo_upload_line(
         history.sync()
         return new_id
 
+    # Must explicitly specify fields due to broken xmlrpc bug in odoo saas~14.4,
+    # that doesn't serialize/escape HTML, resulting in invalid xml for html fields.
+    # Also improves performance, with a small sacrifice in code flexibility.
+    project_fields: Sequence[str] = ("id", "name")
+    task_fields: Sequence[str] = ("id", "name", "project_id")
+
     project: Optional[MutableMapping[str, Any]] = (
-        find_one(odoo_rpc, "project.project", line["project"])
+        find_one(odoo_rpc, "project.project", line["project"], project_fields)
         if "project" in line
         else None
     )
@@ -127,7 +136,7 @@ def odoo_upload_line(
     task: Optional[MutableMapping[str, Any]] = None
     try:
         if "task" in line:
-            task = find_one(odoo_rpc, "project.task", line["task"])
+            task = find_one(odoo_rpc, "project.task", line["task"], task_fields)
         new_task = False
     except MissingRecord as exc:
         if not isinstance(line["task"], str):
@@ -143,7 +152,9 @@ def odoo_upload_line(
             raise ConstraintError("Cannot create new task without project")
         if task is None:
             raise ConstraintError("No project nor task in line")
-        project = find_one(odoo_rpc, "project.project", task["project_id"][0])
+        project = find_one(
+            odoo_rpc, "project.project", task["project_id"][0], project_fields
+        )
     else:
         if task is not None and task["project_id"][0] != project["id"]:
             raise ConstraintError("Task's project and specified project mismatch")
@@ -157,7 +168,7 @@ def odoo_upload_line(
         if dry_run and new_task_id == -1:
             task = dict(new_task_data, id="NEW")
         else:
-            task = find_one(odoo_rpc, "project.task", new_task_id)
+            task = find_one(odoo_rpc, "project.task", new_task_id, task_fields)
 
     # TODO: Maybe try searching timesheet entry with same values (except time unit) and either raise an error or warn
     assert task is not None
