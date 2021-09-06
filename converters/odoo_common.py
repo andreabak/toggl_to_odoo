@@ -46,6 +46,11 @@ class OdooReview(OdooConverter):
         return super().matches(entry) and entry.project.name == "Odoo-review"
 
 
+class OdooMeeting(OdooConverter):
+    def matches(self, entry: TimeEntry) -> bool:
+        return super().matches(entry) and entry.project.name == "Odoo-meeting"
+
+
 class OdooTask(OdooConverter):
     def matches(self, entry: TimeEntry) -> bool:
         return super().matches(entry) and entry.project.name in (

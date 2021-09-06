@@ -12,6 +12,7 @@ from .odoo_common import (
     OdooImprovement,
     OdooCoaching,
     OdooReview,
+    OdooMeeting,
     OdooTask,
     extract_task,
 )
@@ -87,6 +88,14 @@ class OdooReview2Owndb(OdooReview, OdooConverter2Owndb):
     def convert(self, entry: TimeEntry) -> TimesheetLine:
         line: TimesheetLine = super().convert(entry)
         line["task"] = "Code Review"
+        return line
+
+
+@converter2owndb.register(710)
+class OdooMeeting2Owndb(OdooMeeting, OdooConverter2Owndb):
+    def convert(self, entry: TimeEntry) -> TimesheetLine:
+        line: TimesheetLine = super().convert(entry)
+        line["task"] = "Meeting"
         return line
 
 

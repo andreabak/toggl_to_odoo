@@ -10,6 +10,7 @@ from .odoo_common import (
     OdooImprovement,
     OdooCoaching,
     OdooReview,
+    OdooMeeting,
     OdooTask,
     extract_task,
 )
@@ -110,6 +111,17 @@ class OdooReview2Odoo(OdooReview, OdooConverter2Odoo):
         line.update(
             project="(PS) COACHING",
             task="Code Review/PR Review",
+        )
+        return line
+
+
+@converter2odoo.register(710)
+class OdooMeeting2Odoo(OdooMeeting, OdooConverter2Odoo):
+    def convert(self, entry: TimeEntry) -> TimesheetLine:
+        line: TimesheetLine = super().convert(entry)
+        line.update(
+            project="(PS) INT. MEETING",
+            task="(PS) INT. MEETING",
         )
         return line
 
