@@ -3,9 +3,11 @@ import getpass
 import logging
 import math
 import os.path
+from datetime import datetime, timedelta
 from typing import List, Mapping, MutableMapping, Union, Optional, Tuple, Sequence
 from urllib.parse import urlparse, ParseResult, urlunparse
 
+import pytz
 from dateutil.parser import parse as dateutil_parse
 
 from toggl.api import TimeEntry
@@ -111,17 +113,39 @@ def main():
     )
 
     fetch_parser = argparse.ArgumentParser(add_help=False)
-    fetch_parser.add_argument(
+    dates_parse_group = fetch_parser.add_mutually_exclusive_group()
+    dates_manual_parse_group = dates_parse_group.add_argument_group()
+    dates_manual_parse_group.add_argument(
         "-ds",
         "--since",
         metavar="DATETIME",
         help="Get entries since the given date/time",
     )
-    fetch_parser.add_argument(
+    dates_manual_parse_group.add_argument(
         "-du",
         "--until",
         metavar="DATETIME",
         help="Get entries until the given date/time",
+    )
+    dates_parse_group.add_argument(
+        "-lm", "--last-month",
+        action="store_true",
+        help="Get entries from last month",
+    )
+    dates_parse_group.add_argument(
+        "-tm", "--this-month",
+        action="store_true",
+        help="Get entries from this month",
+    )
+    dates_parse_group.add_argument(
+        "-lw", "--last-week",
+        action="store_true",
+        help="Get entries from last week",
+    )
+    dates_parse_group.add_argument(
+        "-tw", "--this-week",
+        action="store_true",
+        help="Get entries from this week",
     )
     fetch_parser.add_argument(
         "-c",
@@ -281,10 +305,32 @@ def main():
         )
 
     with TogglSet.cache_context():
+        date_since: Optional[datetime] = None
+        date_until: Optional[datetime] = None
+        now: datetime = datetime.now(pytz.utc)
+        month_start: datetime = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        week_start: datetime = datetime.fromisocalendar(now.year, now.isocalendar()[1], 1)
+        if args.last_month:
+            date_since = month_start.replace(month=month_start.month - 1)
+            date_until = month_start
+        elif args.this_month:
+            date_since = month_start
+            date_until = month_start.replace(month=month_start.month + 1)
+        elif args.last_week:
+            date_since = week_start - timedelta(days=7)
+            date_until = week_start
+        elif args.this_week:
+            date_since = week_start
+            date_until = week_start + timedelta(days=7)
+        if args.since:
+            date_since = dateutil_parse(args.since)
+        if args.until:
+            date_until = dateutil_parse(args.until)
+
         logger.debug("Fetching time entries...")
         time_entries: List[TimeEntry] = fetch_and_process(
-            since=dateutil_parse(args.since) if args.since else None,
-            until=dateutil_parse(args.until) if args.until else None,
+            since=date_since,
+            until=date_until,
             clients=args.clients.split(",") if args.clients else None,
             projects=args.projects_include.split(",")
             if args.projects_include
