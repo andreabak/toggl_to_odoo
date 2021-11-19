@@ -98,7 +98,7 @@ class OdooCoaching2Odoo(OdooCoaching, OdooConverter2Odoo):
     def convert(self, entry: TimeEntry) -> TimesheetLine:
         line: TimesheetLine = super().convert(entry)
         line.update(
-            project="(PS) COACHING",
+            project=853,
             task=2508170,
         )
         return line
@@ -109,7 +109,7 @@ class OdooReview2Odoo(OdooReview, OdooConverter2Odoo):
     def convert(self, entry: TimeEntry) -> TimesheetLine:
         line: TimesheetLine = super().convert(entry)
         line.update(
-            project="(PS) COACHING",
+            project=853,
             task="Code Review/PR Review",
         )
         return line
