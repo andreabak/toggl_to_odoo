@@ -3,7 +3,7 @@ import getpass
 import logging
 import math
 import os.path
-from typing import List, Mapping, MutableMapping, Union, Optional, Tuple, Sequence
+from typing import List, Mapping, MutableMapping, Union, Optional, Tuple, Sequence, TypedDict
 from urllib.parse import urlparse, ParseResult, urlunparse
 
 from dateutil.parser import parse as dateutil_parse
@@ -96,6 +96,13 @@ def parse_odoo_credentials(
 def main():
     general_parser = argparse.ArgumentParser(add_help=False)
     general_parser.add_argument(
+        "-c",
+        "--conf",
+        "--config",
+        dest="config",
+        help="Config file",
+    )
+    general_parser.add_argument(
         "-v",
         "--verbose",
         dest="verbosity",
@@ -124,7 +131,7 @@ def main():
         help="Get entries until the given date/time",
     )
     fetch_parser.add_argument(
-        "-c",
+        "-cl",
         "--clients",
         metavar="CLIENT[,CLIENT,...]",
         default="",
@@ -236,6 +243,7 @@ def main():
         action="store_true",
         help="Overwrite conflicting timesheet entries",
     )
+
     main_parser: argparse.ArgumentParser = argparse.ArgumentParser()
     subparsers = main_parser.add_subparsers(
         title="mode",

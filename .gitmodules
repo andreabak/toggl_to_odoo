@@ -1,0 +1,3 @@
+[submodule "modules/ConfigManager"]
+	path = modules/ConfigManager
+	url = https://github.com/andreabak/ConfigManager
