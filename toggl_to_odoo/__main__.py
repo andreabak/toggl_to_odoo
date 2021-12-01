@@ -3,12 +3,13 @@ import getpass
 import logging
 import math
 import os.path
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Mapping, MutableMapping, Union, Optional, Tuple, Sequence
 from urllib.parse import urlparse, ParseResult, urlunparse
 
 import pytz
 from dateutil.parser import parse as dateutil_parse
+from dateutil.relativedelta import relativedelta
 
 from toggl.api import TimeEntry
 from toggl.api.base import TogglSet
@@ -311,17 +312,17 @@ def main():
         month_start: datetime = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         week_start: datetime = datetime.fromisocalendar(now.year, now.isocalendar()[1], 1)
         if args.last_month:
-            date_since = month_start.replace(month=month_start.month - 1)
+            date_since = month_start - relativedelta(months=1)
             date_until = month_start
         elif args.this_month:
             date_since = month_start
-            date_until = month_start.replace(month=month_start.month + 1)
+            date_until = month_start + relativedelta(months=1)
         elif args.last_week:
-            date_since = week_start - timedelta(days=7)
+            date_since = week_start - relativedelta(days=7)
             date_until = week_start
         elif args.this_week:
             date_since = week_start
-            date_until = week_start + timedelta(days=7)
+            date_until = week_start + relativedelta(days=7)
         if args.since:
             date_since = dateutil_parse(args.since)
         if args.until:
